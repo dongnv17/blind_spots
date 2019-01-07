@@ -10,23 +10,11 @@ Future<String> _loadLocationsAsset() async {
 }
 
 //load from local test
-//loadLocations() async{
-//  String jsonLocations = await _loadLocationsAsset();
-//  final jsonResponse = json.decode(jsonLocations);
-//  print("loadLocations jsonResponse $jsonResponse");
-//  Locations locations = new Locations.fromJson(jsonResponse);
-//  print(locations.lstLocationArea[0].user);
-//}
-//load from server
-loadLocations() async {
-  print('load locations');
-  final response = await http.get(MapDef.urlServer);
-  if (response.statusCode == 200) {
-    print('load locations success');
-    final  jsonBody = json.decode(response.body);
-    print("loadLocations async jsonBody: $jsonBody");
-    Locations locations = new Locations.fromJson(jsonBody);
-    print('load locations final');
-    print(locations.lstLocationArea[0].user);
-  }
+loadLocations() async{
+  String jsonLocations = await _loadLocationsAsset();
+  final jsonResponse = json.decode(jsonLocations);
+  print("loadLocations jsonResponse $jsonResponse");
+  Locations locations = new Locations.fromJson(jsonResponse);
+  print(locations.lstLocationArea[0].user);
 }
+
