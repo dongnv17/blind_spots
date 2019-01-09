@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:location/location.dart' as _userLocal;
 import 'package:flutter/services.dart';
 import 'package:map_view/map_view.dart';
-import 'dart:async';
+import 'package:blind_spots/common/cal_bearing.dart';
 import 'package:blind_spots/common/map_def.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:blind_spots/model/location_model.dart';
-import 'package:blind_spots/services/location_services.dart' as locationService;
-import 'package:blind_spots/test/product_services.dart';
 import 'package:blind_spots/model/location_model.dart' as locationModel;
 import 'package:blind_spots/common/util.dart' as util;
 
@@ -22,7 +20,7 @@ class _MapScreenState extends State<MapScreen> {
   Map<String, double> _currentLocation;
   Map<String, double> _startLocation;
   List<LocationArea> _lstLocationArea;
-
+  double _bearing; // ignore: undefined_getter
   //public
   var staticMapProvider;
   var m_zoomLevel = 18.5;
@@ -47,7 +45,22 @@ class _MapScreenState extends State<MapScreen> {
     _location.onLocationChanged().listen((Map<String, double> result) {
       setState(() {
         if (_currentLocation != result) {
+          if (_currentLocation != null) {
+            _bearing = CalBearing.getBearing(
+                _currentLocation["latitude"],
+                _currentLocation["longitude"],
+                result["latitude"],
+                result["longitude"]);
+            print("_bearing: $_bearing");
+            util.showToast("bearing: $_bearing");
+            mapView.setCameraPosition(new CameraPosition(
+                new Location(_currentLocation["latitude"],
+                    _currentLocation["longitude"]),
+                m_zoomLevel,
+                bearing: _bearing));
+          }
           _currentLocation = result;
+          print("_currentLocation.length ==: $_currentLocation.length");
           print("initState _lstLocationArea: $_lstLocationArea.runtimeType");
           loadLocations();
         }
@@ -57,38 +70,39 @@ class _MapScreenState extends State<MapScreen> {
 
   List<Marker> getMarker() {
     double cuLat = _currentLocation["latitude"];
-    util.showToast("getMarker--: $cuLat");
-    List<Marker> markers = <Marker>[
-      new Marker(
-        "1",
-        "The Lalit",
-        _currentLocation["latitude"],
-        _currentLocation["longitude"],
+    int m_lenght = _lstLocationArea.length;
+//    util.showToast("_lstLocationArea.length--: $m_lenght");
+    List<Marker> markers = new List(m_lenght + 1);
+
+    //Current location
+    markers[0] = new Marker(
+        "0", "", _currentLocation["latitude"], _currentLocation["longitude"],
+        color: Colors.amber,
+        markerIcon: new MarkerIcon(
+          "assets/images/my_car.png",
+          width: 120.0,
+          height: 120.0,
+        ),
+        draggable: true,
+        rotation: _bearing);
+    // Area location
+    for (int i = 1; i <= m_lenght; i++) {
+      double userLat = _lstLocationArea[i - 1].lat;
+      double useLon = _lstLocationArea[i - 1].lng;
+      markers[i] = new Marker(
+        "$i",
+        "",
+        userLat,
+        useLon,
         color: Colors.amber,
         markerIcon: new MarkerIcon(
           "assets/images/car.png",
-          width: 88.0,
-          height: 103.0,
+          width: 120.0,
+          height: 120.0,
         ),
         draggable: true,
-      ),
-      new Marker(
-        "2",
-        "Tech mahindra",
-        21.0169795,
-        105.7824433,
-        color: Colors.red,
-        draggable: true,
-      ),
-      new Marker(
-        "3",
-        "Infosys",
-        21.0169895,
-        105.7824433,
-        color: Colors.green,
-        draggable: true,
-      ),
-    ];
+      );
+    }
     return markers;
   }
 
@@ -147,14 +161,24 @@ class _MapScreenState extends State<MapScreen> {
 
     setState(() {
       _startLocation = location;
+      CameraPosition _position;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
-      body: new Center(
-        child: showMap(),
+      body: new Column(
+        children: <Widget>[
+          new Container(
+            child: showMap(),
+          ),
+        ],
+      ),
+      floatingActionButton: new FloatingActionButton(
+        elevation: 0.0,
+        child: new Icon(Icons.check),
+        backgroundColor: new Color(0xFFE57373),
       ),
     );
   }
@@ -167,8 +191,9 @@ class _MapScreenState extends State<MapScreen> {
         initialCameraPosition: new CameraPosition(
             new Location(
                 _currentLocation["latitude"], _currentLocation["longitude"]),
-            m_zoomLevel),
-        showUserLocation: true,
+            m_zoomLevel,
+            bearing: _bearing),
+        showUserLocation: false,
         title: "Recent Location"));
   }
 }

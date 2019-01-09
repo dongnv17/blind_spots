@@ -2,9 +2,9 @@ class LocationArea {
   final int id;
   final String user;
   final double lat;
-  final double lon;
+  final double lng;
 
-  LocationArea({this.id, this.user, this.lat, this.lon});
+  LocationArea({this.id, this.user, this.lat, this.lng});
 
   factory LocationArea.fromJson(Map<String, dynamic> parsedJson) {
     print("LocationArea.fromJson(Map");
@@ -12,7 +12,7 @@ class LocationArea {
         id: parsedJson["id"],
         user: parsedJson["user"],
         lat: parsedJson["lat"],
-        lon: parsedJson["lon"]);
+        lng: parsedJson["lon"]);
   }
 }
 
