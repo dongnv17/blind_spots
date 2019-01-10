@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:location/location.dart' as _userLocal;
 import 'package:flutter/services.dart';
-import 'package:map_view/map_view.dart';
 import 'package:blind_spots/common/cal_bearing.dart';
 import 'package:blind_spots/common/map_def.dart';
 import 'package:http/http.dart' as http;
@@ -9,6 +8,7 @@ import 'dart:convert';
 import 'package:blind_spots/model/location_model.dart';
 import 'package:blind_spots/model/location_model.dart' as locationModel;
 import 'package:blind_spots/common/util.dart' as util;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class MapScreen extends StatefulWidget {
   @override
@@ -18,29 +18,32 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   //private
   Map<String, double> _currentLocation;
-  Map<String, double> _startLocation;
   List<LocationArea> _lstLocationArea;
   double _bearing; // ignore: undefined_getter
+  GoogleMapController _mapController;
+
   //public
+  MapType _currentMapType = MapType.normal;
+  LatLng _center;
   var staticMapProvider;
   var m_zoomLevel = 18.5;
-  MapView mapView;
+
+//  MapView mapView;
   _userLocal.Location _location = new _userLocal.Location();
   bool _permission = false;
   String error;
   bool currentWidget = true;
-  List<Marker> lstMarkers;
+
+//  List<Marker> lstMarkers;
 
   //Set-Get
-  Map<String, double> get startLocation => _startLocation;
-
   Map<String, double> get currentLocation => _currentLocation;
 
   @override
   void initState() {
     super.initState();
-    staticMapProvider = new StaticMapProvider(MapDef.api_key);
-    mapView = new MapView();
+//    staticMapProvider = new StaticMapProvider(MapDef.api_key);
+//    mapView = new MapView();
     initPlatformState();
     _location.onLocationChanged().listen((Map<String, double> result) {
       setState(() {
@@ -52,14 +55,24 @@ class _MapScreenState extends State<MapScreen> {
                 result["latitude"],
                 result["longitude"]);
             print("_bearing: $_bearing");
-            util.showToast("bearing: $_bearing");
-            mapView.setCameraPosition(new CameraPosition(
-                new Location(_currentLocation["latitude"],
-                    _currentLocation["longitude"]),
-                m_zoomLevel,
-                bearing: _bearing));
+//            util.showToast("bearing: $_bearing");
+            _mapController.animateCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target: _center,
+                  zoom: m_zoomLevel,
+                  bearing: _bearing,
+                ),
+              ),
+            );
+//            mapView.setCameraPosition(new CameraPosition(
+//                new Location(_currentLocation["latitude"],
+//                    _currentLocation["longitude"]),
+//                m_zoomLevel,
+//                bearing: _bearing));
           }
           _currentLocation = result;
+          _center = LatLng(result["latitude"], result["longitude"]);
           print("_currentLocation.length ==: $_currentLocation.length");
           print("initState _lstLocationArea: $_lstLocationArea.runtimeType");
           loadLocations();
@@ -68,44 +81,77 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
-  List<Marker> getMarker() {
-    double cuLat = _currentLocation["latitude"];
-    int m_lenght = _lstLocationArea.length;
-//    util.showToast("_lstLocationArea.length--: $m_lenght");
-    List<Marker> markers = new List(m_lenght + 1);
+  void _onMapCreated(GoogleMapController controller) {
+    _mapController = controller;
+  }
 
+//  List<Marker> getMarker() {
+//    double cuLat = _currentLocation["latitude"];
+//    int m_lenght = _lstLocationArea.length;
+////    util.showToast("_lstLocationArea.length--: $m_lenght");
+//    List<Marker> markers = new List(m_lenght + 1);
+//
+//    //Current location
+//    markers[0] = new Marker(
+//        "0", "", _currentLocation["latitude"], _currentLocation["longitude"],
+//        color: Colors.amber,
+//        markerIcon: new MarkerIcon(
+//          "assets/images/my_car.png",
+//          width: 120.0,
+//          height: 120.0,
+//        ),
+//        draggable: true,
+//        rotation: _bearing);
+//    // Area location
+//    for (int i = 1; i <= m_lenght; i++) {
+//      double userLat = _lstLocationArea[i - 1].lat;
+//      double useLon = _lstLocationArea[i - 1].lng;
+//      markers[i] = new Marker(
+//        "$i",
+//        "",
+//        userLat,
+//        useLon,
+//        color: Colors.amber,
+//        markerIcon: new MarkerIcon(
+//          "assets/images/car.png",
+//          width: 120.0,
+//          height: 120.0,
+//        ),
+//        draggable: true,
+//      );
+//    }
+//    return markers;
+//  }
+  void _onAddMarker() {
+    int m_lenght = _lstLocationArea.length;
+    _mapController.clearMarkers();
     //Current location
-    markers[0] = new Marker(
-        "0", "", _currentLocation["latitude"], _currentLocation["longitude"],
-        color: Colors.amber,
-        markerIcon: new MarkerIcon(
-          "assets/images/my_car.png",
-          width: 120.0,
-          height: 120.0,
+    _mapController.addMarker(
+      MarkerOptions(
+        position: LatLng(
+          _currentLocation["latitude"],
+          _currentLocation["longitude"],
         ),
-        draggable: true,
-        rotation: _bearing);
+        icon: BitmapDescriptor.fromAsset("assets/images/my_car.png"),
+        rotation: _bearing,
+      ),
+    );
     // Area location
     for (int i = 1; i <= m_lenght; i++) {
       double userLat = _lstLocationArea[i - 1].lat;
       double useLon = _lstLocationArea[i - 1].lng;
-      markers[i] = new Marker(
-        "$i",
-        "",
-        userLat,
-        useLon,
-        color: Colors.amber,
-        markerIcon: new MarkerIcon(
-          "assets/images/car.png",
-          width: 120.0,
-          height: 120.0,
+      _mapController.addMarker(
+        MarkerOptions(
+          position: LatLng(
+            userLat,
+            useLon,
+          ),
+          icon: BitmapDescriptor.fromAsset("assets/images/car.png"),
+          rotation: _bearing,
         ),
-        draggable: true,
       );
     }
-    return markers;
   }
-
   //load from server
   loadLocations() async {
     print('load locations');
@@ -125,7 +171,8 @@ class _MapScreenState extends State<MapScreen> {
           double cuLat = _currentLocation["latitude"];
           print("loadLocations $cuLat");
 //          mapView.clearAnnotations();
-          mapView.setMarkers(getMarker());
+//          mapView.setMarkers(getMarker());
+          _onAddMarker();
         });
       }
     } on Exception catch (e) {
@@ -153,47 +200,48 @@ class _MapScreenState extends State<MapScreen> {
 
       location = null;
     }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    //if (!mounted) return;
-
-    setState(() {
-      _startLocation = location;
-      CameraPosition _position;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return new Scaffold(
-      body: new Column(
-        children: <Widget>[
-          new Container(
-            child: showMap(),
-          ),
-        ],
-      ),
-      floatingActionButton: new FloatingActionButton(
-        elevation: 0.0,
-        child: new Icon(Icons.check),
-        backgroundColor: new Color(0xFFE57373),
+    return new MaterialApp(
+      home: new Scaffold(
+        appBar: AppBar(
+          title: Text("Blind Spots Maps"),
+          backgroundColor: Colors.green[700],
+        ),
+        body: Stack(
+          children: <Widget>[
+            GoogleMap(
+              onMapCreated: _onMapCreated,
+              options: GoogleMapOptions(
+                trackCameraPosition: true,
+                cameraPosition: CameraPosition(
+                  target: _center,
+                  zoom: m_zoomLevel,
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Column(
+                  children: <Widget>[
+                    FloatingActionButton(
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      backgroundColor: Colors.green,
+                      child: new Center(
+                        child: Text(_currentLocation["speed"].toString() + "km/h", textAlign: TextAlign.center,),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
-  }
-
-  showListCar() {}
-
-  showMap() {
-    mapView.show(new MapOptions(
-        mapViewType: MapViewType.normal,
-        initialCameraPosition: new CameraPosition(
-            new Location(
-                _currentLocation["latitude"], _currentLocation["longitude"]),
-            m_zoomLevel,
-            bearing: _bearing),
-        showUserLocation: false,
-        title: "Recent Location"));
   }
 }
