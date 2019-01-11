@@ -65,11 +65,6 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ),
             );
-//            mapView.setCameraPosition(new CameraPosition(
-//                new Location(_currentLocation["latitude"],
-//                    _currentLocation["longitude"]),
-//                m_zoomLevel,
-//                bearing: _bearing));
           }
           _currentLocation = result;
           _center = LatLng(result["latitude"], result["longitude"]);
@@ -85,49 +80,13 @@ class _MapScreenState extends State<MapScreen> {
     _mapController = controller;
   }
 
-//  List<Marker> getMarker() {
-//    double cuLat = _currentLocation["latitude"];
-//    int m_lenght = _lstLocationArea.length;
-////    util.showToast("_lstLocationArea.length--: $m_lenght");
-//    List<Marker> markers = new List(m_lenght + 1);
-//
-//    //Current location
-//    markers[0] = new Marker(
-//        "0", "", _currentLocation["latitude"], _currentLocation["longitude"],
-//        color: Colors.amber,
-//        markerIcon: new MarkerIcon(
-//          "assets/images/my_car.png",
-//          width: 120.0,
-//          height: 120.0,
-//        ),
-//        draggable: true,
-//        rotation: _bearing);
-//    // Area location
-//    for (int i = 1; i <= m_lenght; i++) {
-//      double userLat = _lstLocationArea[i - 1].lat;
-//      double useLon = _lstLocationArea[i - 1].lng;
-//      markers[i] = new Marker(
-//        "$i",
-//        "",
-//        userLat,
-//        useLon,
-//        color: Colors.amber,
-//        markerIcon: new MarkerIcon(
-//          "assets/images/car.png",
-//          width: 120.0,
-//          height: 120.0,
-//        ),
-//        draggable: true,
-//      );
-//    }
-//    return markers;
-//  }
   void _onAddMarker() {
     int m_lenght = _lstLocationArea.length;
     _mapController.clearMarkers();
     //Current location
     _mapController.addMarker(
       MarkerOptions(
+        anchor: Offset(0.5, 0.5),
         position: LatLng(
           _currentLocation["latitude"],
           _currentLocation["longitude"],
@@ -216,6 +175,7 @@ class _MapScreenState extends State<MapScreen> {
               onMapCreated: _onMapCreated,
               options: GoogleMapOptions(
                 trackCameraPosition: true,
+                myLocationEnabled: true,
                 cameraPosition: CameraPosition(
                   target: _center,
                   zoom: m_zoomLevel,
@@ -232,7 +192,7 @@ class _MapScreenState extends State<MapScreen> {
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       backgroundColor: Colors.green,
                       child: new Center(
-                        child: Text(_currentLocation["speed"].toString() + "km/h", textAlign: TextAlign.center,),
+                        child: Text(_currentLocation["speed"].toStringAsFixed(1) + "\nm/s", textAlign: TextAlign.center,),
                       ),
                     ),
                   ],
